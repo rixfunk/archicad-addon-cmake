@@ -1,14 +1,13 @@
 {
-    "addOnName": "ExampleAddOn",
+    "addOnName": "AC28-POC",
     "defaultLanguage": "INT",
     "languages": [
-        "INT",
-        "JPN"
+        "INT"
     ],
-    "version": "0.0.0",
+    "version": "0.1.0",
     "copyright": {
-        "name": "Graphisoft SE",
-        "year": "1984-%Y"
+        "name": "rixfunk",
+        "year": "2026"
     },
-    "description": "Example Archicad addon"
+    "description": "ArchiCAD 28 Add-On POC for Claude Agent development"
 }
