@@ -6,7 +6,10 @@
 }
 
 'STR#' ID_ADDON_MENU "Strings for the Menu" {
-/* [  1] */		"Example AddOn Command... ^E3 ^ES ^EE ^EI ^ED ^ET ^10001"
+/* [   ] */		"Options"
+/* [   ] */		"Example AddOn"
+/* [  1] */		"List Elements..."
+/* [  2] */		"Clean Line Types..."
 }
 
 'GDLG' ID_ADDON_DLG Modal | grow   40   40  345  128  "" {
@@ -19,4 +22,27 @@
 1	""		Button_0
 2	""		Button_1
 3	""		Separator_0
+}
+
+/* Line Type Cleaner Dialog */
+'GDLG' ID_LINETYPE_CLEANER_DLG Modal | grow   50   50  700  420  "Line Type Cleaner" {
+/* [  1] */ MultiSelList			   10   10  680  300	LargePlain  PartialItems  18  HasHeader  21
+/* [  2] */ CheckBox				   10  320  200   20	LargePlain "Show only non-standard"
+/* [  3] */ PopupControl			  220  320  150   20	100  10
+/* [  4] */ Button					  500  380   90   23	LargePlain "Apply"
+/* [  5] */ Button					  600  380   90   23	LargePlain "Cancel"
+/* [  6] */ Separator				   10  370  680    2
+/* [  7] */ LeftText				   10  350  300   20	LargePlain "0 selected"
+/* [  8] */ Button					  580  320  110   23	LargePlain "Import XML..."
+}
+
+'DLGH' ID_LINETYPE_CLEANER_DLG DLG_LineTypeCleaner {
+1	""		MultiSelListBox_0
+2	""		CheckBox_0
+3	""		PopupControl_0
+4	""		Button_0
+5	""		Button_1
+6	""		Separator_0
+7	""		LeftText_0
+8	""		Button_2
 }
