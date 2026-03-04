@@ -92,12 +92,13 @@ private:
 		DialogId = 32601,
 		ListBoxId = 1,
 		FilterCheckBoxId = 2,
-		ReplacementPopUpId = 3,
-		ApplyButtonId = 4,
-		CancelButtonId = 5,
-		SeparatorId = 6,
-		StatusTextId = 7,
-		ImportXMLButtonId = 8
+		ReplaceLabelId = 3,
+		ReplacementPopUpId = 4,
+		ApplyButtonId = 5,
+		CancelButtonId = 6,
+		SeparatorId = 7,
+		StatusTextId = 8,
+		ImportXMLButtonId = 9
 	};
 
 	// Column indices for the list box (1-based)
@@ -112,6 +113,7 @@ private:
 	// UI controls
 	DG::MultiSelListBox		lineTypeList;
 	DG::CheckBox			filterCheckBox;
+	DG::LeftText			replaceLabel;
 	DG::PopUp				replacementPopUp;
 	DG::Button				applyButton;
 	DG::Button				cancelButton;

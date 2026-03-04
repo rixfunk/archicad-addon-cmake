@@ -413,6 +413,7 @@ LineTypeCleaningDialog::LineTypeCleaningDialog () :
 	DG::ModalDialog (ACAPI_GetOwnResModule (), DialogId, ACAPI_GetOwnResModule ()),
 	lineTypeList (GetReference (), ListBoxId),
 	filterCheckBox (GetReference (), FilterCheckBoxId),
+	replaceLabel (GetReference (), ReplaceLabelId),
 	replacementPopUp (GetReference (), ReplacementPopUpId),
 	applyButton (GetReference (), ApplyButtonId),
 	cancelButton (GetReference (), CancelButtonId),
@@ -432,9 +433,6 @@ LineTypeCleaningDialog::LineTypeCleaningDialog () :
 	// Also attach to list box for events
 	lineTypeList.Attach (*this);
 
-	// Enable idle events to track scroll position
-	EnableIdleEvent ();
-
 	// Setup list box columns
 	SetupListBoxColumns ();
 
@@ -449,8 +447,9 @@ LineTypeCleaningDialog::LineTypeCleaningDialog () :
 	PopulateLineTypes ();
 	UpdateStatusText ();
 
-	// Hide popup initially - will be shown at row position when NON-STD selected
-	replacementPopUp.Hide ();
+	// Popup at fixed position below the list, disabled until NON-STD rows are selected
+	replacementPopUp.Show ();
+	replacementPopUp.Disable ();
 
 	LogLineTypeCleanerMessage ("LineTypeCleaningDialog created");
 }
@@ -755,10 +754,7 @@ void LineTypeCleaningDialog::PanelClosed (const DG::PanelCloseEvent& /*ev*/)
 
 void LineTypeCleaningDialog::PanelIdle (const DG::PanelIdleEvent& /*ev*/)
 {
-	// Called periodically - use to track scroll position changes
-	if (editingRowIndex > 0 && replacementPopUp.IsVisible ()) {
-		RepositionPopupAtEditingRow ();
-	}
+	// Not used - popup is at fixed position
 }
 
 void LineTypeCleaningDialog::PanelResized (const DG::PanelResizeEvent& ev)
@@ -773,7 +769,8 @@ void LineTypeCleaningDialog::PanelResized (const DG::PanelResizeEvent& ev)
 
 	// Move bottom controls down by vertical change
 	filterCheckBox.Move (0, vGrow);
-	replacementPopUp.Move (hGrow, vGrow);
+	replaceLabel.Move (0, vGrow);
+	replacementPopUp.Move (0, vGrow);
 	importXMLButton.Move (hGrow, vGrow);
 	applyButton.Move (hGrow, vGrow);
 	cancelButton.Move (hGrow, vGrow);
@@ -853,7 +850,7 @@ void LineTypeCleaningDialog::ListBoxSelectionChanged (const DG::ListBoxSelection
 		// Update status text with selection count
 		if (nonStdCount > 0) {
 			GS::UniString statusStr;
-			statusStr.Printf ("%d non-standard selected", nonStdCount);
+			statusStr.Printf ("%d non-standard selected - use dropdown to set replacement:", nonStdCount);
 			statusText.SetText (statusStr);
 
 			// Enable popup when NON-STD rows are selected
@@ -877,65 +874,19 @@ void LineTypeCleaningDialog::ListBoxSelectionChanged (const DG::ListBoxSelection
 				}
 
 				editingRowIndex = firstNonStdRow;
-				lastPopupY = -1; // Reset to force reposition
-
-				// Position and show popup at the row
-				RepositionPopupAtEditingRow ();
 				replacementPopUp.Enable ();
 			}
 		} else {
 			UpdateStatusText ();
-			replacementPopUp.Hide ();
+			replacementPopUp.Disable ();
 			editingRowIndex = -1;
-			lastPopupY = -1;
 		}
 	}
 }
 
 void LineTypeCleaningDialog::RepositionPopupAtEditingRow ()
 {
-	if (editingRowIndex <= 0) {
-		return;
-	}
-
-	// Check if the editing row is still visible
-	if (!lineTypeList.IsItemVisible (editingRowIndex)) {
-		// Row scrolled out of view, hide popup
-		replacementPopUp.Hide ();
-		return;
-	}
-
-	// Get current row position
-	DG::Rect itemRect;
-	if (lineTypeList.GetItemRect (editingRowIndex, &itemRect)) {
-		short newY = itemRect.GetTop ();
-
-		// Only reposition if Y changed (scrolling occurred)
-		if (newY != lastPopupY) {
-			const short replacementColOffset = 280 + 100 + 80; // Name + Status + Usage columns
-			DG::Rect listRect = lineTypeList.GetRect ();
-
-			short popupX = listRect.GetLeft () + replacementColOffset;
-			short popupY = newY;
-
-			// Clip to list bounds - hide if row is outside visible area
-			short listTop = listRect.GetTop () + 21; // Account for header height
-			short listBottom = listRect.GetBottom ();
-
-			if (popupY < listTop || popupY > listBottom - 24) {
-				replacementPopUp.Hide ();
-				return;
-			}
-
-			replacementPopUp.Move (popupX - replacementPopUp.GetRect ().GetLeft (),
-								   popupY - replacementPopUp.GetRect ().GetTop ());
-			lastPopupY = newY;
-
-			if (!replacementPopUp.IsVisible ()) {
-				replacementPopUp.Show ();
-			}
-		}
-	}
+	// Not used - popup is at fixed position below the list
 }
 
 void LineTypeCleaningDialog::ShowReplacementPopUpForRow (short rowIndex)

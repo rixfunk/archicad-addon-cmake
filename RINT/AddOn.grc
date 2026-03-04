@@ -28,21 +28,23 @@
 'GDLG' ID_LINETYPE_CLEANER_DLG Modal | grow   50   50  700  420  "Line Type Cleaner" {
 /* [  1] */ MultiSelList			   10   10  680  300	LargePlain  PartialItems  18  HasHeader  21
 /* [  2] */ CheckBox				   10  320  200   20	LargePlain "Show only non-standard"
-/* [  3] */ PopupControl			  220  320  150   20	100  10
-/* [  4] */ Button					  500  380   90   23	LargePlain "Apply"
-/* [  5] */ Button					  600  380   90   23	LargePlain "Cancel"
-/* [  6] */ Separator				   10  370  680    2
-/* [  7] */ LeftText				   10  350  300   20	LargePlain "0 selected"
-/* [  8] */ Button					  580  320  110   23	LargePlain "Import XML..."
+/* [  3] */ LeftText				  220  323   80   16	LargePlain "Replace with:"
+/* [  4] */ PopupControl			  305  320  160   20	100  10
+/* [  5] */ Button					  500  380   90   23	LargePlain "Apply"
+/* [  6] */ Button					  600  380   90   23	LargePlain "Cancel"
+/* [  7] */ Separator				   10  370  680    2
+/* [  8] */ LeftText				   10  350  480   20	LargePlain "Select NON-STD items above, then choose replacement"
+/* [  9] */ Button					  580  320  110   23	LargePlain "Import XML..."
 }
 
 'DLGH' ID_LINETYPE_CLEANER_DLG DLG_LineTypeCleaner {
 1	""		MultiSelListBox_0
 2	""		CheckBox_0
-3	""		PopupControl_0
-4	""		Button_0
-5	""		Button_1
-6	""		Separator_0
-7	""		LeftText_0
-8	""		Button_2
+3	""		LeftText_1
+4	""		PopupControl_0
+5	""		Button_0
+6	""		Button_1
+7	""		Separator_0
+8	""		LeftText_0
+9	""		Button_2
 }
