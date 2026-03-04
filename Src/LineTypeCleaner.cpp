@@ -441,8 +441,9 @@ LineTypeCleaningDialog::LineTypeCleaningDialog () :
 	PopulateLineTypes ();
 	UpdateStatusText ();
 
-	// Hide the popup initially - it will be shown embedded in cells via SetOnTabItem
-	replacementPopUp.Hide ();
+	// Popup stays at fixed position (as defined in GRC), disabled until NON-STD rows selected
+	replacementPopUp.Show ();
+	replacementPopUp.Disable ();
 
 	LogLineTypeCleanerMessage ("LineTypeCleaningDialog created");
 }
@@ -815,7 +816,7 @@ void LineTypeCleaningDialog::ListBoxSelectionChanged (const DG::ListBoxSelection
 		// Get all selected items
 		GS::Array<short> selectedRows = lineTypeList.GetSelectedItems ();
 
-		// Find the first selected NON-STD row to position the popup
+		// Find the first selected NON-STD row
 		short firstNonStdRow = -1;
 		Int32 nonStdCount = 0;
 
@@ -838,7 +839,8 @@ void LineTypeCleaningDialog::ListBoxSelectionChanged (const DG::ListBoxSelection
 			UpdateStatusText ();
 		}
 
-		// Show popup if at least one NON-STD row is selected
+		// Show/enable popup if at least one NON-STD row is selected
+		// Popup stays at its fixed position - no floating behavior
 		if (firstNonStdRow > 0 && !allowedLineTypesList.empty ()) {
 			// Set popup selection based on first selected row's replacement
 			DGUserData sourceValue = lineTypeList.GetItemValue (firstNonStdRow);
@@ -858,30 +860,16 @@ void LineTypeCleaningDialog::ListBoxSelectionChanged (const DG::ListBoxSelection
 				replacementPopUp.SelectItem (1);
 			}
 
-			// Position popup at the first NON-STD row's Replacement column
 			editingRowIndex = firstNonStdRow;
+			replacementPopUp.Show ();
+			replacementPopUp.Enable ();
 
-			DG::Rect itemRect;
-			if (lineTypeList.GetItemRect (firstNonStdRow, &itemRect)) {
-				const short replacementColOffset = 280 + 100 + 80;
-				DG::Rect listRect = lineTypeList.GetRect ();
-
-				short popupX = listRect.GetLeft () + replacementColOffset;
-				short popupY = itemRect.GetTop ();
-
-				replacementPopUp.Move (popupX - replacementPopUp.GetRect ().GetLeft (),
-									   popupY - replacementPopUp.GetRect ().GetTop ());
-				replacementPopUp.Show ();
-
-				std::ostringstream oss;
-				oss << "ListBoxSelectionChanged: " << nonStdCount << " NON-STD rows selected, popup at row " << firstNonStdRow;
-				LogLineTypeCleanerMessage (oss.str ());
-			} else {
-				replacementPopUp.Show ();
-			}
+			std::ostringstream oss;
+			oss << "ListBoxSelectionChanged: " << nonStdCount << " NON-STD rows selected";
+			LogLineTypeCleanerMessage (oss.str ());
 		} else {
-			// No NON-STD rows selected, hide popup
-			replacementPopUp.Hide ();
+			// No NON-STD rows selected, disable popup
+			replacementPopUp.Disable ();
 			editingRowIndex = -1;
 		}
 	}
@@ -893,39 +881,14 @@ void LineTypeCleaningDialog::ShowReplacementPopUpForRow (short rowIndex)
 	(void)rowIndex;
 }
 
-void LineTypeCleaningDialog::ListBoxItemDragged (const DG::ListBoxDragEvent& ev)
+void LineTypeCleaningDialog::ListBoxClicked (const DG::ListBoxClickEvent& /*ev*/)
 {
-	if (ev.GetSource () == &lineTypeList) {
-		// Reposition popup when list is scrolled/dragged
-		RepositionPopupAtEditingRow ();
-	}
+	// Not used - popup is at fixed position
 }
 
 void LineTypeCleaningDialog::RepositionPopupAtEditingRow ()
 {
-	if (editingRowIndex <= 0 || !replacementPopUp.IsVisible ()) {
-		return;
-	}
-
-	// Check if the editing row is still visible
-	if (!lineTypeList.IsItemVisible (editingRowIndex)) {
-		// Row scrolled out of view, hide popup
-		replacementPopUp.Hide ();
-		return;
-	}
-
-	// Reposition popup at the current row position
-	DG::Rect itemRect;
-	if (lineTypeList.GetItemRect (editingRowIndex, &itemRect)) {
-		const short replacementColOffset = 280 + 100 + 80;
-		DG::Rect listRect = lineTypeList.GetRect ();
-
-		short popupX = listRect.GetLeft () + replacementColOffset;
-		short popupY = itemRect.GetTop ();
-
-		replacementPopUp.Move (popupX - replacementPopUp.GetRect ().GetLeft (),
-							   popupY - replacementPopUp.GetRect ().GetTop ());
-	}
+	// Not used - popup is at fixed position
 }
 
 void LineTypeCleaningDialog::UpdateRowReplacement (short rowIndex, API_AttributeIndex replacementIndex)

@@ -160,7 +160,7 @@ private:
 	virtual void CheckItemChanged (const DG::CheckItemChangeEvent& ev) override;
 	virtual void PopUpChanged (const DG::PopUpChangeEvent& ev) override;
 	virtual void ListBoxSelectionChanged (const DG::ListBoxSelectionEvent& ev) override;
-	virtual void ListBoxItemDragged (const DG::ListBoxDragEvent& ev) override;
+	virtual void ListBoxClicked (const DG::ListBoxClickEvent& ev) override;
 
 	// Helper to reposition popup at current editing row
 	void RepositionPopupAtEditingRow ();
