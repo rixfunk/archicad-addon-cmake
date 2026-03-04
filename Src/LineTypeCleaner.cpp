@@ -417,8 +417,7 @@ LineTypeCleaningDialog::LineTypeCleaningDialog () :
 	importXMLButton (GetReference (), ImportXMLButtonId),
 	changesApplied (0),
 	showOnlyNonStandard (false),
-	editingRowIndex (-1),
-	lastPopupY (-1)
+	editingRowIndex (-1)
 {
 	SetTitle ("Line Type Cleaner");
 
@@ -427,9 +426,6 @@ LineTypeCleaningDialog::LineTypeCleaningDialog () :
 
 	// Also attach to list box for events
 	lineTypeList.Attach (*this);
-
-	// Enable mouse move events on list box to track scroll
-	lineTypeList.EnableMouseMoveEvent ();
 
 	// Setup list box columns
 	SetupListBoxColumns ();
@@ -445,8 +441,9 @@ LineTypeCleaningDialog::LineTypeCleaningDialog () :
 	PopulateLineTypes ();
 	UpdateStatusText ();
 
-	// Hide popup initially - will be positioned at row when selected
-	replacementPopUp.Hide ();
+	// Popup stays at fixed position, disabled until NON-STD rows are selected
+	replacementPopUp.Show ();
+	replacementPopUp.Disable ();
 
 	LogLineTypeCleanerMessage ("LineTypeCleaningDialog created");
 }
@@ -819,7 +816,7 @@ void LineTypeCleaningDialog::ListBoxSelectionChanged (const DG::ListBoxSelection
 		// Get all selected items
 		GS::Array<short> selectedRows = lineTypeList.GetSelectedItems ();
 
-		// Find the first selected NON-STD row
+		// Find the first selected NON-STD row and count
 		short firstNonStdRow = -1;
 		Int32 nonStdCount = 0;
 
@@ -838,45 +835,34 @@ void LineTypeCleaningDialog::ListBoxSelectionChanged (const DG::ListBoxSelection
 			GS::UniString statusStr;
 			statusStr.Printf ("%d non-standard selected", nonStdCount);
 			statusText.SetText (statusStr);
+
+			// Enable popup when NON-STD rows are selected
+			if (!allowedLineTypesList.empty ()) {
+				// Set popup selection based on first selected row's replacement
+				DGUserData sourceValue = lineTypeList.GetItemValue (firstNonStdRow);
+				Int32 sourceIdx = static_cast<Int32>(sourceValue);
+
+				auto it = replacementMap.find (sourceIdx);
+				if (it != replacementMap.end ()) {
+					Int32 targetIdx = it->second;
+					for (short i = 1; i <= replacementPopUp.GetItemCount (); i++) {
+						DGUserData itemValue = replacementPopUp.GetItemValue (i);
+						if (static_cast<Int32>(itemValue) == targetIdx) {
+							replacementPopUp.SelectItem (i);
+							break;
+						}
+					}
+				} else if (replacementPopUp.GetItemCount () > 0) {
+					replacementPopUp.SelectItem (1);
+				}
+
+				editingRowIndex = firstNonStdRow;
+				replacementPopUp.Enable ();
+			}
 		} else {
 			UpdateStatusText ();
-		}
-
-		// Show popup positioned at first NON-STD row if selected
-		if (firstNonStdRow > 0 && !allowedLineTypesList.empty ()) {
-			// Set popup selection based on first selected row's replacement
-			DGUserData sourceValue = lineTypeList.GetItemValue (firstNonStdRow);
-			Int32 sourceIdx = static_cast<Int32>(sourceValue);
-
-			auto it = replacementMap.find (sourceIdx);
-			if (it != replacementMap.end ()) {
-				Int32 targetIdx = it->second;
-				for (short i = 1; i <= replacementPopUp.GetItemCount (); i++) {
-					DGUserData itemValue = replacementPopUp.GetItemValue (i);
-					if (static_cast<Int32>(itemValue) == targetIdx) {
-						replacementPopUp.SelectItem (i);
-						break;
-					}
-				}
-			} else if (replacementPopUp.GetItemCount () > 0) {
-				replacementPopUp.SelectItem (1);
-			}
-
-			editingRowIndex = firstNonStdRow;
-
-			// Position popup at the row
-			RepositionPopupAtEditingRow ();
-			replacementPopUp.Show ();
-			replacementPopUp.Enable ();
-
-			std::ostringstream oss;
-			oss << "ListBoxSelectionChanged: " << nonStdCount << " NON-STD rows selected, editing row " << firstNonStdRow;
-			LogLineTypeCleanerMessage (oss.str ());
-		} else {
-			// No NON-STD rows selected, hide popup
-			replacementPopUp.Hide ();
+			replacementPopUp.Disable ();
 			editingRowIndex = -1;
-			lastPopupY = -1;
 		}
 	}
 }
@@ -886,54 +872,48 @@ void LineTypeCleaningDialog::ShowReplacementPopUpForRow (short rowIndex)
 	(void)rowIndex;
 }
 
-void LineTypeCleaningDialog::ListBoxMouseMoved (const DG::ListBoxMouseMoveEvent& ev, short* inArea)
+void LineTypeCleaningDialog::ListBoxDoubleClicked (const DG::ListBoxDoubleClickEvent& ev)
 {
-	(void)inArea;
+	if (ev.GetSource () == &lineTypeList) {
+		short clickedRow = ev.GetListItem ();
+		if (clickedRow > 0) {
+			GS::UniString status = lineTypeList.GetTabItemText (clickedRow, ColStatus);
+			if (status == "NON-STD" && replacementPopUp.GetItemCount () > 0) {
+				// Double-clicked on a NON-STD row - cycle to next replacement option
+				DGUserData sourceValue = lineTypeList.GetItemValue (clickedRow);
+				Int32 sourceIdx = static_cast<Int32>(sourceValue);
 
-	if (ev.GetSource () == &lineTypeList && editingRowIndex > 0 && replacementPopUp.IsVisible ()) {
-		// Reposition popup if the row position has changed (due to scrolling)
-		RepositionPopupAtEditingRow ();
-	}
-}
+				// Find current replacement index
+				short currentPopupItem = 1;
+				auto it = replacementMap.find (sourceIdx);
+				if (it != replacementMap.end ()) {
+					Int32 targetIdx = it->second;
+					for (short i = 1; i <= replacementPopUp.GetItemCount (); i++) {
+						DGUserData itemValue = replacementPopUp.GetItemValue (i);
+						if (static_cast<Int32>(itemValue) == targetIdx) {
+							currentPopupItem = i;
+							break;
+						}
+					}
+				}
 
-void LineTypeCleaningDialog::RepositionPopupAtEditingRow ()
-{
-	if (editingRowIndex <= 0) {
-		return;
-	}
+				// Cycle to next item
+				short nextItem = currentPopupItem + 1;
+				if (nextItem > replacementPopUp.GetItemCount ()) {
+					nextItem = 1;
+				}
 
-	// Check if the editing row is still visible
-	if (!lineTypeList.IsItemVisible (editingRowIndex)) {
-		// Row scrolled out of view, hide popup
-		replacementPopUp.Hide ();
-		return;
-	}
+				// Apply the new replacement
+				DGUserData targetValue = replacementPopUp.GetItemValue (nextItem);
+				API_AttributeIndex targetIndex = ACAPI_CreateAttributeIndex (static_cast<Int32>(targetValue));
+				UpdateRowReplacement (clickedRow, targetIndex);
 
-	// Get current row position
-	DG::Rect itemRect;
-	if (lineTypeList.GetItemRect (editingRowIndex, &itemRect)) {
-		short newY = itemRect.GetTop ();
+				// Update popup selection to match
+				replacementPopUp.SelectItem (nextItem);
 
-		// Only reposition if Y changed (scrolling occurred)
-		if (newY != lastPopupY) {
-			const short replacementColOffset = 280 + 100 + 80;
-			DG::Rect listRect = lineTypeList.GetRect ();
-
-			short popupX = listRect.GetLeft () + replacementColOffset;
-			short popupY = newY;
-
-			// Clip to list bounds - hide if row is outside visible area
-			if (popupY < listRect.GetTop () || popupY > listRect.GetBottom () - 20) {
-				replacementPopUp.Hide ();
-				return;
-			}
-
-			replacementPopUp.Move (popupX - replacementPopUp.GetRect ().GetLeft (),
-								   popupY - replacementPopUp.GetRect ().GetTop ());
-			lastPopupY = newY;
-
-			if (!replacementPopUp.IsVisible ()) {
-				replacementPopUp.Show ();
+				std::ostringstream oss;
+				oss << "Double-click on row " << clickedRow << " - cycled to replacement option " << nextItem;
+				LogLineTypeCleanerMessage (oss.str ());
 			}
 		}
 	}
