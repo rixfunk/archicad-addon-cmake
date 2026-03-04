@@ -893,6 +893,41 @@ void LineTypeCleaningDialog::ShowReplacementPopUpForRow (short rowIndex)
 	(void)rowIndex;
 }
 
+void LineTypeCleaningDialog::ListBoxItemDragged (const DG::ListBoxDragEvent& ev)
+{
+	if (ev.GetSource () == &lineTypeList) {
+		// Reposition popup when list is scrolled/dragged
+		RepositionPopupAtEditingRow ();
+	}
+}
+
+void LineTypeCleaningDialog::RepositionPopupAtEditingRow ()
+{
+	if (editingRowIndex <= 0 || !replacementPopUp.IsVisible ()) {
+		return;
+	}
+
+	// Check if the editing row is still visible
+	if (!lineTypeList.IsItemVisible (editingRowIndex)) {
+		// Row scrolled out of view, hide popup
+		replacementPopUp.Hide ();
+		return;
+	}
+
+	// Reposition popup at the current row position
+	DG::Rect itemRect;
+	if (lineTypeList.GetItemRect (editingRowIndex, &itemRect)) {
+		const short replacementColOffset = 280 + 100 + 80;
+		DG::Rect listRect = lineTypeList.GetRect ();
+
+		short popupX = listRect.GetLeft () + replacementColOffset;
+		short popupY = itemRect.GetTop ();
+
+		replacementPopUp.Move (popupX - replacementPopUp.GetRect ().GetLeft (),
+							   popupY - replacementPopUp.GetRect ().GetTop ());
+	}
+}
+
 void LineTypeCleaningDialog::UpdateRowReplacement (short rowIndex, API_AttributeIndex replacementIndex)
 {
 	// Get the source line type index
