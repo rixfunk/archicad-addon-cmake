@@ -160,10 +160,13 @@ private:
 	virtual void CheckItemChanged (const DG::CheckItemChangeEvent& ev) override;
 	virtual void PopUpChanged (const DG::PopUpChangeEvent& ev) override;
 	virtual void ListBoxSelectionChanged (const DG::ListBoxSelectionEvent& ev) override;
-	virtual void ListBoxClicked (const DG::ListBoxClickEvent& ev) override;
+	virtual void ListBoxMouseMoved (const DG::ListBoxMouseMoveEvent& ev, short* inArea) override;
 
 	// Helper to reposition popup at current editing row
 	void RepositionPopupAtEditingRow ();
+
+	// Track last known popup Y position to detect scroll
+	short lastPopupY;
 };
 
 #endif // LINETYPECLEANER_HPP
