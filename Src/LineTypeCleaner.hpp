@@ -155,12 +155,18 @@ private:
 
 	// Observer overrides
 	virtual void PanelOpened (const DG::PanelOpenEvent& ev) override;
+	virtual void PanelClosed (const DG::PanelCloseEvent& ev) override;
 	virtual void PanelResized (const DG::PanelResizeEvent& ev) override;
+	virtual void PanelIdle (const DG::PanelIdleEvent& ev) override;
 	virtual void ButtonClicked (const DG::ButtonClickEvent& ev) override;
 	virtual void CheckItemChanged (const DG::CheckItemChangeEvent& ev) override;
 	virtual void PopUpChanged (const DG::PopUpChangeEvent& ev) override;
 	virtual void ListBoxSelectionChanged (const DG::ListBoxSelectionEvent& ev) override;
 	virtual void ListBoxDoubleClicked (const DG::ListBoxDoubleClickEvent& ev) override;
+
+	// Scroll tracking
+	void RepositionPopupAtEditingRow ();
+	short lastPopupY;
 };
 
 #endif // LINETYPECLEANER_HPP

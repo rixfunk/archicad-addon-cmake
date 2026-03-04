@@ -6,6 +6,10 @@
 #include <sstream>
 #include <ctime>
 
+#ifdef macintosh
+#include <dispatch/dispatch.h>
+#endif
+
 // Logging helpers
 void LogLineTypeCleanerMessage (const char* message)
 {
@@ -417,7 +421,8 @@ LineTypeCleaningDialog::LineTypeCleaningDialog () :
 	importXMLButton (GetReference (), ImportXMLButtonId),
 	changesApplied (0),
 	showOnlyNonStandard (false),
-	editingRowIndex (-1)
+	editingRowIndex (-1),
+	lastPopupY (-1)
 {
 	SetTitle ("Line Type Cleaner");
 
@@ -426,6 +431,9 @@ LineTypeCleaningDialog::LineTypeCleaningDialog () :
 
 	// Also attach to list box for events
 	lineTypeList.Attach (*this);
+
+	// Enable idle events to track scroll position
+	EnableIdleEvent ();
 
 	// Setup list box columns
 	SetupListBoxColumns ();
@@ -441,9 +449,8 @@ LineTypeCleaningDialog::LineTypeCleaningDialog () :
 	PopulateLineTypes ();
 	UpdateStatusText ();
 
-	// Popup stays at fixed position, disabled until NON-STD rows are selected
-	replacementPopUp.Show ();
-	replacementPopUp.Disable ();
+	// Hide popup initially - will be shown at row position when NON-STD selected
+	replacementPopUp.Hide ();
 
 	LogLineTypeCleanerMessage ("LineTypeCleaningDialog created");
 }
@@ -741,6 +748,19 @@ void LineTypeCleaningDialog::PanelOpened (const DG::PanelOpenEvent& /*ev*/)
 	// Additional setup after dialog opens
 }
 
+void LineTypeCleaningDialog::PanelClosed (const DG::PanelCloseEvent& /*ev*/)
+{
+	// Cleanup
+}
+
+void LineTypeCleaningDialog::PanelIdle (const DG::PanelIdleEvent& /*ev*/)
+{
+	// Called periodically - use to track scroll position changes
+	if (editingRowIndex > 0 && replacementPopUp.IsVisible ()) {
+		RepositionPopupAtEditingRow ();
+	}
+}
+
 void LineTypeCleaningDialog::PanelResized (const DG::PanelResizeEvent& ev)
 {
 	short hGrow = ev.GetHorizontalChange ();
@@ -857,12 +877,63 @@ void LineTypeCleaningDialog::ListBoxSelectionChanged (const DG::ListBoxSelection
 				}
 
 				editingRowIndex = firstNonStdRow;
+				lastPopupY = -1; // Reset to force reposition
+
+				// Position and show popup at the row
+				RepositionPopupAtEditingRow ();
 				replacementPopUp.Enable ();
 			}
 		} else {
 			UpdateStatusText ();
-			replacementPopUp.Disable ();
+			replacementPopUp.Hide ();
 			editingRowIndex = -1;
+			lastPopupY = -1;
+		}
+	}
+}
+
+void LineTypeCleaningDialog::RepositionPopupAtEditingRow ()
+{
+	if (editingRowIndex <= 0) {
+		return;
+	}
+
+	// Check if the editing row is still visible
+	if (!lineTypeList.IsItemVisible (editingRowIndex)) {
+		// Row scrolled out of view, hide popup
+		replacementPopUp.Hide ();
+		return;
+	}
+
+	// Get current row position
+	DG::Rect itemRect;
+	if (lineTypeList.GetItemRect (editingRowIndex, &itemRect)) {
+		short newY = itemRect.GetTop ();
+
+		// Only reposition if Y changed (scrolling occurred)
+		if (newY != lastPopupY) {
+			const short replacementColOffset = 280 + 100 + 80; // Name + Status + Usage columns
+			DG::Rect listRect = lineTypeList.GetRect ();
+
+			short popupX = listRect.GetLeft () + replacementColOffset;
+			short popupY = newY;
+
+			// Clip to list bounds - hide if row is outside visible area
+			short listTop = listRect.GetTop () + 21; // Account for header height
+			short listBottom = listRect.GetBottom ();
+
+			if (popupY < listTop || popupY > listBottom - 24) {
+				replacementPopUp.Hide ();
+				return;
+			}
+
+			replacementPopUp.Move (popupX - replacementPopUp.GetRect ().GetLeft (),
+								   popupY - replacementPopUp.GetRect ().GetTop ());
+			lastPopupY = newY;
+
+			if (!replacementPopUp.IsVisible ()) {
+				replacementPopUp.Show ();
+			}
 		}
 	}
 }
